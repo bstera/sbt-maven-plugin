@@ -13,10 +13,10 @@ public class ScriptRepo {
 
 	private static final String URI = "https://github.com/kcmvp/sbt-maven-groovy.git";
 
-	public static final File DEFAULT_DIR = new File(System.getProperty("user.home") + File.separator + ".sbt-maven-groovy");
+	public static final File DEFAULT_DIR = new File(System.getProperty("user.home") + File.separator + ".sbt-groovy");
 
 
-	public static void clone(boolean force) throws Exception {
+	public static File getScript(String name, boolean force) throws Exception {
 		if (!DEFAULT_DIR.exists()) {
 			DEFAULT_DIR.mkdirs();
 			Git.cloneRepository().setURI(URI).setDirectory(DEFAULT_DIR).call();
@@ -25,5 +25,6 @@ public class ScriptRepo {
 			Git git = new Git(rep);
 			git.pull().setRemote("origin").call();
 		}
+		return new File(DEFAULT_DIR, name);
 	}
 }

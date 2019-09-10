@@ -27,7 +27,6 @@ import org.codehaus.gmavenplus.mojo.AbstractToolsMojo;
 import org.codehaus.gmavenplus.util.NoExitSecurityManager;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -50,6 +49,7 @@ public class mybatis extends AbstractToolsMojo {
 	@Parameter(defaultValue = "schema")
 	protected String action;
 
+//	@Parameter(defaultValue = "${project.build.directory}/generated-sources/wsimport")
 	@Parameter
 	protected String entity;
 
@@ -173,14 +173,12 @@ public class mybatis extends AbstractToolsMojo {
 		try {
 
 			String className = this.getClass().getSimpleName();
-			File scriptFile = new File(ScriptRepo.DEFAULT_DIR+File.separator+className, action + ".groovy");
-			if (scriptFile.isFile()) {
-				getLog().info("Running Groovy script from " + scriptFile.getCanonicalPath() + ".");
-				Method evaluateFile = findMethod(groovyShellClass, "evaluate", File.class);
-				invokeMethod(evaluateFile, shell, scriptFile);
-			} else {
-			}
-		} catch (IOException ioe) {
+
+			File scriptFile = ScriptRepo.getScript(className + File.separator + action + ".groovy", false);
+			getLog().info("Running Groovy script from " + scriptFile.getCanonicalPath() + ".");
+			Method evaluateFile = findMethod(groovyShellClass, "evaluate", File.class);
+			invokeMethod(evaluateFile, shell, scriptFile);
+		} catch (Exception ioe) {
 			throw new MojoExecutionException("An Exception occurred while executing script ", ioe);
 		}
 	}
