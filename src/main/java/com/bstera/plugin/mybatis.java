@@ -16,6 +16,7 @@ package com.bstera.plugin;
  * limitations under the License.
  */
 
+import com.bstera.common.ScriptRepo;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -23,19 +24,13 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.codehaus.gmavenplus.model.Version;
 import org.codehaus.gmavenplus.mojo.AbstractToolsMojo;
-import org.codehaus.gmavenplus.util.FileUtils;
 import org.codehaus.gmavenplus.util.NoExitSecurityManager;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
-import java.net.URL;
 
 import static org.codehaus.gmavenplus.util.ReflectionUtils.findConstructor;
 import static org.codehaus.gmavenplus.util.ReflectionUtils.findMethod;
@@ -43,25 +38,20 @@ import static org.codehaus.gmavenplus.util.ReflectionUtils.invokeConstructor;
 import static org.codehaus.gmavenplus.util.ReflectionUtils.invokeMethod;
 
 
-@Mojo(name = "schema", requiresDependencyResolution = ResolutionScope.TEST, threadSafe = true)
-public class Schema extends AbstractToolsMojo {
+@Mojo(name = "mybatis", requiresDependencyResolution = ResolutionScope.TEST, threadSafe = true)
+public class mybatis extends AbstractToolsMojo {
 
 	/**
 	 * Groovy 1.7.0 version.
 	 */
 	protected static final Version GROOVY_1_7_0 = new Version(1, 7, 0);
 
-	/**
-	 * Groovy scripts to run (in order). Can be an actual Groovy script or a {@link java.net.URL URL} to a Groovy script (local or remote).
-	 */
-	@Parameter(required = true)
-	protected String[] scripts;
 
-	/**
-	 * Whether to continue executing remaining scripts when a script fails.
-	 */
-	@Parameter(defaultValue = "false")
-	protected boolean continueExecuting;
+	@Parameter(defaultValue = "schema")
+	protected String action;
+
+	@Parameter
+	protected String entity;
 
 	/**
 	 * The encoding of script files.
@@ -143,9 +133,9 @@ public class Schema extends AbstractToolsMojo {
 	 * @param groovyShellClass the groovy.lang.GroovyShell class
 	 * @return a new groovy.lang.GroovyShell object
 	 * @throws InvocationTargetException when a reflection invocation needed for shell configuration cannot be completed
-	 * @throws IllegalAccessException when a method needed for shell configuration cannot be accessed
-	 * @throws InstantiationException when a class needed for shell configuration cannot be instantiated
-	 * @throws ClassNotFoundException when a class needed for shell configuration cannot be found
+	 * @throws IllegalAccessException    when a method needed for shell configuration cannot be accessed
+	 * @throws InstantiationException    when a class needed for shell configuration cannot be instantiated
+	 * @throws ClassNotFoundException    when a class needed for shell configuration cannot be found
 	 */
 	protected Object setupShell(final Class<?> groovyShellClass) throws InvocationTargetException, IllegalAccessException, InstantiationException, ClassNotFoundException {
 		Object shell;
@@ -174,81 +164,24 @@ public class Schema extends AbstractToolsMojo {
 	 * Executes the configured scripts.
 	 *
 	 * @param groovyShellClass the groovy.lang.GroovyShell class
-	 * @param shell a groovy.lag.GroovyShell object
+	 * @param shell            a groovy.lag.GroovyShell object
 	 * @throws InvocationTargetException when a reflection invocation needed for script execution cannot be completed
-	 * @throws IllegalAccessException when a method needed for script execution cannot be accessed
-	 * @throws MojoExecutionException when an exception occurred during script execution (causes a "BUILD ERROR" message to be displayed)
+	 * @throws IllegalAccessException    when a method needed for script execution cannot be accessed
+	 * @throws MojoExecutionException    when an exception occurred during script execution (causes a "BUILD ERROR" message to be displayed)
 	 */
 	protected void executeScripts(final Class<?> groovyShellClass, final Object shell) throws InvocationTargetException, IllegalAccessException, MojoExecutionException {
-		int scriptNum = 1;
-		for (String script : scripts) {
-			try {
-				// TODO: try as file first, then as URL?
-				try {
-					// it's a URL to a script
-					executeScriptFromUrl(groovyShellClass, shell, script);
-				} catch (MalformedURLException e) {
-					// it's not a URL to a script, try as a filename
-					File scriptFile = new File(script);
-					if (scriptFile.isFile()) {
-						getLog().info("Running Groovy script from " + scriptFile.getCanonicalPath() + ".");
-						Method evaluateFile = findMethod(groovyShellClass, "evaluate", File.class);
-						invokeMethod(evaluateFile, shell, scriptFile);
-					} else {
-						// it's neither a filename or URL, treat as a script body
-						Method evaluateString = findMethod(groovyShellClass, "evaluate", String.class);
-						invokeMethod(evaluateString, shell, script);
-					}
-				}
-			} catch (IOException ioe) {
-				if (continueExecuting) {
-					getLog().error("An Exception occurred while executing script " + scriptNum + ". Continuing to execute remaining scripts.", ioe);
-				} else {
-					throw new MojoExecutionException("An Exception occurred while executing script " + scriptNum + ".", ioe);
-				}
-			}
-			scriptNum++;
-		}
-	}
+		try {
 
-	/**
-	 * Executes a script at a URL location.
-	 *
-	 * @param groovyShellClass the GroovyShell class
-	 * @param shell a groovy.lag.GroovyShell object
-	 * @param script the script URL to execute
-	 * @throws IOException when the stream can't be opened on the URL
-	 * @throws InvocationTargetException when a reflection invocation needed for script execution cannot be completed
-	 * @throws IllegalAccessException when a method needed for script execution cannot be accessed
-	 */
-	protected void executeScriptFromUrl(Class<?> groovyShellClass, Object shell, String script) throws IOException, InvocationTargetException, IllegalAccessException {
-		URL url = new URL(script);
-		getLog().info("Running Groovy script from " + url + ".");
-		if (groovyAtLeast(GROOVY_1_7_0)) {
-			Method evaluateUrlWithReader = findMethod(groovyShellClass, "evaluate", Reader.class);
-			BufferedReader reader = null;
-			try {
-				if (sourceEncoding != null) {
-					reader = new BufferedReader(new InputStreamReader(url.openStream(), sourceEncoding));
-				} else {
-					reader = new BufferedReader(new InputStreamReader(url.openStream()));
-				}
-				invokeMethod(evaluateUrlWithReader, shell, reader);
-			} finally {
-				FileUtils.closeQuietly(reader);
+			String className = this.getClass().getSimpleName();
+			File scriptFile = new File(ScriptRepo.DEFAULT_DIR+File.separator+className, action + ".groovy");
+			if (scriptFile.isFile()) {
+				getLog().info("Running Groovy script from " + scriptFile.getCanonicalPath() + ".");
+				Method evaluateFile = findMethod(groovyShellClass, "evaluate", File.class);
+				invokeMethod(evaluateFile, shell, scriptFile);
+			} else {
 			}
-		} else {
-			Method evaluateUrlWithStream = findMethod(groovyShellClass, "evaluate", InputStream.class);
-			InputStream inputStream = null;
-			try {
-				if (sourceEncoding != null) {
-					getLog().warn("Source encoding does not apply to Groovy versions previous to 1.7.0, ignoring.");
-				}
-				inputStream = url.openStream();
-				invokeMethod(evaluateUrlWithStream, shell, inputStream);
-			} finally {
-				FileUtils.closeQuietly(inputStream);
-			}
+		} catch (IOException ioe) {
+			throw new MojoExecutionException("An Exception occurred while executing script ", ioe);
 		}
 	}
 
