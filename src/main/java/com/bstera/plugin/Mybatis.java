@@ -38,7 +38,7 @@ import static org.codehaus.gmavenplus.util.ReflectionUtils.invokeMethod;
 
 
 @Mojo(name = "mybatis", requiresDependencyResolution = ResolutionScope.TEST, threadSafe = true)
-public class mybatis extends AbstractToolsMojo {
+public class Mybatis extends AbstractToolsMojo {
 
 	/**
 	 * Groovy 1.7.0 version.
@@ -46,12 +46,14 @@ public class mybatis extends AbstractToolsMojo {
 	protected static final Version GROOVY_1_7_0 = new Version(1, 7, 0);
 
 
-	@Parameter(defaultValue = "schema")
+	@Parameter(name = "action", property = "action", defaultValue = "schema")
 	protected String action;
 
 //	@Parameter(defaultValue = "${project.build.directory}/generated-sources/wsimport")
-	@Parameter
+	@Parameter(name="entity", property = "entity")
 	protected String entity;
+
+
 
 	/**
 	 * The encoding of script files.
@@ -175,7 +177,13 @@ public class mybatis extends AbstractToolsMojo {
 			String className = this.getClass().getSimpleName();
 
 			File scriptFile = ScriptRepo.getScript(className + File.separator + action + ".groovy", false);
-			getLog().info("Running Groovy script from " + scriptFile.getCanonicalPath() + ".");
+			if (!scriptFile.exists()){
+				getLog().error("Plugin does not support action: "+ action);
+				return;
+			}
+			if (session.getUserProperties().get("action") == null){
+				session.getUserProperties().setProperty("action", action);
+			}
 			Method evaluateFile = findMethod(groovyShellClass, "evaluate", File.class);
 			invokeMethod(evaluateFile, shell, scriptFile);
 		} catch (Exception ioe) {
