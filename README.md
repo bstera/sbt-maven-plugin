@@ -1,5 +1,5 @@
 ### How to use ?
-1. Add plugin dependency to your pom.
+-  Add plugin dependency to your pom.
 ```$xml
     <build>
 		<plugins>
@@ -7,10 +7,6 @@
 				<groupId>com.bstera.plugin</groupId>
 				<artifactId>sbt-maven-plugin</artifactId>
 				<version>1.0.0</version>
-				<configuration>
-					<action>${action}</action>
-					<entity>${entity}</entity>
-				</configuration>
 				<dependencies>
 					<dependency>
 						<groupId>org.codehaus.groovy</groupId>
@@ -25,3 +21,4 @@
 		</plugins>
 	</build>
 ```
+- Run **mvn sbt:info** to get support commands
