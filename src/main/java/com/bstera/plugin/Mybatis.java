@@ -37,7 +37,7 @@ import static org.codehaus.gmavenplus.util.ReflectionUtils.invokeConstructor;
 import static org.codehaus.gmavenplus.util.ReflectionUtils.invokeMethod;
 
 
-@Mojo(name = "mybatis", requiresDependencyResolution = ResolutionScope.TEST, threadSafe = true)
+@Mojo(name = "mybatis", requiresDependencyResolution = ResolutionScope.TEST, configurator = "include-project-test-dependencies", threadSafe = true)
 public class Mybatis extends AbstractToolsMojo {
 
 	/**
