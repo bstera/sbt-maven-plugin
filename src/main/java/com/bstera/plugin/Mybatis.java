@@ -49,7 +49,6 @@ public class Mybatis extends AbstractToolsMojo {
 	@Parameter(name = "action", property = "action", defaultValue = "schema")
 	protected String action;
 
-//	@Parameter(defaultValue = "${project.build.directory}/generated-sources/wsimport")
 	@Parameter(name="entity", property = "entity")
 	protected String entity;
 
