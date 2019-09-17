@@ -46,10 +46,10 @@ public class Mybatis extends AbstractToolsMojo {
 	protected static final Version GROOVY_1_7_0 = new Version(1, 7, 0);
 
 
-	@Parameter(name = "action", property = "action", defaultValue = "schema")
+	@Parameter(property = "mybatis.action", defaultValue = "schema")
 	protected String action;
 
-	@Parameter(name="entity", property = "entity")
+	@Parameter(property = "mybatis.entity")
 	protected String entity;
 
 
@@ -173,16 +173,15 @@ public class Mybatis extends AbstractToolsMojo {
 	protected void executeScripts(final Class<?> groovyShellClass, final Object shell) throws InvocationTargetException, IllegalAccessException, MojoExecutionException {
 		try {
 
+			getLog().info("action -> "+ action +" entity -> "+ entity);
 			String className = this.getClass().getSimpleName();
-
 			File scriptFile = ScriptRepo.getScript(className + File.separator + action + ".groovy", false);
 			if (!scriptFile.exists()){
 				getLog().error("Plugin does not support action: "+ action);
 				return;
 			}
-			if (session.getUserProperties().get("action") == null){
-				session.getUserProperties().setProperty("action", action);
-			}
+			session.getUserProperties().setProperty("action", action);
+			session.getUserProperties().setProperty("entity", entity);
 			Method evaluateFile = findMethod(groovyShellClass, "evaluate", File.class);
 			invokeMethod(evaluateFile, shell, scriptFile);
 		} catch (Exception ioe) {
