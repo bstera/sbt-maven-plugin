@@ -5,12 +5,6 @@
         <groupId>com.bstera.plugin</groupId>
         <artifactId>sbt-maven-plugin</artifactId>
         <version>1.0.0</version>
-        <configuration>
-            <properties>
-                <mybatis.entity>${entity}</mybatis.entity>
-                <mybatis.action>${action}</mybatis.action>
-            </properties>
-        </configuration>
         <dependencies>
             <dependency>
                 <groupId>org.codehaus.groovy</groupId>
